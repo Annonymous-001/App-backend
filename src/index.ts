@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import { clerkMiddleware } from '@clerk/express';
+
 import { PrismaClient } from '@prisma/client';
 
 // Import routes
@@ -40,15 +40,20 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS configuration for Expo
+// CORS configuration for Expo and mobile apps
 const allowedOrigins = [
   'exp://localhost:8081',
   'exp://127.0.0.1:8081',
   'exp://192.168.101.73:8081',
+  'exp://192.168.101.75:8081',
   'http://localhost:8081',
   'http://127.0.0.1:8081',
   'http://192.168.101.73:8081',
   'http://192.168.101.75:8081',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:19006', // Expo dev server
+  'http://192.168.101.75:19006', // Expo dev server on your IP
   process.env.FRONTEND_URL || 'exp://192.168.101.75:8081',
 ];
 
@@ -57,9 +62,13 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
 
+    console.log('🌐 CORS check for origin:', origin);
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS allowed for:', origin);
       callback(null, true);
     } else {
+      console.log('❌ CORS blocked for:', origin);
       callback(new Error(`CORS policy: Origin ${origin} not allowed`));
     }
   },
@@ -69,8 +78,7 @@ app.use(cors({
 }));
 
 
-// Clerk middleware with proper configuration
-app.use(clerkMiddleware());
+// Note: Clerk middleware is now handled manually in auth routes
 
 // Request logging middleware
 app.use((req, res, next) => {
