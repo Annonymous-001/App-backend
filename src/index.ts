@@ -15,7 +15,7 @@ import dashboardRoutes from './routes/dashboard';
 import attendanceRoutes from './routes/attendance';
 import feeRoutes from './routes/fees';
 import examRoutes from './routes/exams';
-import notificationRoutes from './routes/notifications';
+
 import adminRoutes from './routes/admin';
 
 // Load environment variables
@@ -53,7 +53,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
 
@@ -102,7 +102,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/exams', examRoutes);
-app.use('/api/notifications', notificationRoutes);
+
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

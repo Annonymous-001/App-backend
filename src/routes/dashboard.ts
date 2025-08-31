@@ -69,18 +69,7 @@ router.get('/student', requireAuth, getUserProfile, requireRole(['student']), as
       take: 5
     });
 
-    // Get recent notifications
-    const notifications = await prisma.notification.findMany({
-      where: {
-        OR: [
-          { studentId: student.id },
-          { targetRole: 'student' },
-          { relatedClassId: enrollment?.classId }
-        ]
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
+
 
     // Get upcoming exams
     const upcomingExams = await prisma.exam.findMany({
@@ -113,7 +102,6 @@ router.get('/student', requireAuth, getUserProfile, requireRole(['student']), as
           paidAmount: fee.paidAmount.toString()
         })),
         results,
-        notifications,
         upcomingExams,
         stats: {
           attendancePercentage: attendance.length > 0 
@@ -180,17 +168,7 @@ router.get('/teacher', requireAuth, getUserProfile, requireRole(['teacher']), as
       orderBy: { date: 'desc' }
     });
 
-    // Get recent notifications
-    const notifications = await prisma.notification.findMany({
-      where: {
-        OR: [
-          { teacherId: teacher.id },
-          { targetRole: 'teacher' }
-        ]
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
+
 
     // Get upcoming exams for teacher's classes
     const upcomingExams = await prisma.exam.findMany({
@@ -217,7 +195,6 @@ router.get('/teacher', requireAuth, getUserProfile, requireRole(['teacher']), as
         classes,
         todayLessons,
         teacherAttendance,
-        notifications,
         upcomingExams,
         stats: {
           totalClasses: classes.length,
@@ -294,18 +271,7 @@ router.get('/parent', requireAuth, getUserProfile, requireRole(['parent']), asyn
       orderBy: { dueDate: 'asc' }
     });
 
-    // Get notifications for parent
-    const notifications = await prisma.notification.findMany({
-      where: {
-        OR: [
-          { parentId: parent.id },
-          { targetRole: 'parent' },
-          { studentId: { in: children.map(child => child.id) } }
-        ]
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
+
 
     // Get upcoming exams for children's classes
     const classIds = children.flatMap(child => 
@@ -344,7 +310,6 @@ router.get('/parent', requireAuth, getUserProfile, requireRole(['parent']), asyn
           totalAmount: fee.totalAmount.toString(),
           paidAmount: fee.paidAmount.toString()
         })),
-        notifications,
         upcomingExams,
         stats: {
           totalChildren: children.length,

@@ -53,7 +53,11 @@ router.get('/teachers', requireAuth, getUserProfile, requireRole(['admin']), asy
   try {
     const teachers = await prisma.teacher.findMany({
       include: {
-        subjects: true,
+        SubjectToTeacher: {
+          include: {
+            Subject: true
+          }
+        },
         classes: {
           include: {
             students: {
@@ -118,7 +122,7 @@ router.get('/attendance/:classId', requireAuth, getUserProfile, requireRole(['ad
 
     const attendance = await prisma.attendance.findMany({
       where: {
-        classId: parseInt(classId),
+        classId: parseInt(classId || '0'),
         date: {
           gte: today
         }

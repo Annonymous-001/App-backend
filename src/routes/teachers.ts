@@ -13,7 +13,11 @@ router.get('/profile', requireAuth, getUserProfile, requireRole(['teacher']), as
     const teacherData = await prisma.teacher.findUnique({
       where: { id: teacher.id },
       include: {
-        subjects: true,
+        SubjectToTeacher: {
+          include: {
+            Subject: true
+          }
+        },
         classes: {
           include: {
             grade: true,
@@ -342,44 +346,7 @@ router.get('/class/:classId/attendance', requireAuth, getUserProfile, requireRol
   }
 });
 
-// Get teacher notifications
-router.get('/notifications', requireAuth, getUserProfile, requireRole(['teacher']), async (req: AuthenticatedRequest, res) => {
-  try {
-    const teacher = req.userProfile;
-    const { limit = '20', unreadOnly = 'false' } = req.query;
 
-    const whereClause: any = {
-      OR: [
-        { teacherId: teacher.id },
-        { targetRole: 'teacher' }
-      ]
-    };
-
-    if (unreadOnly === 'true') {
-      whereClause.isRead = false;
-    }
-
-    const notifications = await prisma.notification.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as string)
-    });
-
-    return res.json({
-      success: true,
-      data: {
-        notifications,
-        unreadCount: notifications.filter(n => !n.isRead).length
-      }
-    });
-  } catch (error) {
-    console.error('Get teacher notifications error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to get notifications'
-    });
-  }
-});
 
 // Test endpoint for debugging teacher authentication
 router.get('/test', requireAuth, getUserProfile, requireRole(['teacher']), async (req: AuthenticatedRequest, res) => {

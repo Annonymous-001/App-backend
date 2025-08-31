@@ -275,65 +275,7 @@ router.get('/children/results', requireAuth, getUserProfile, requireRole(['paren
   }
 });
 
-// Get parent notifications
-router.get('/notifications', requireAuth, getUserProfile, requireRole(['parent']), async (req: AuthenticatedRequest, res) => {
-  try {
-    const parent = req.userProfile;
-    const { limit = '20', unreadOnly = 'false' } = req.query;
 
-    // Get children IDs for child-specific notifications
-    const children = await prisma.student.findMany({
-      where: { parentId: parent.id },
-      select: { id: true }
-    });
-
-    const whereClause: any = {
-      OR: [
-        { parentId: parent.id },
-        { targetRole: 'parent' }
-      ]
-    };
-
-    if (children.length > 0) {
-      whereClause.OR.push({
-        studentId: {
-          in: children.map(child => child.id)
-        }
-      });
-    }
-
-    if (unreadOnly === 'true') {
-      whereClause.isRead = false;
-    }
-
-    const notifications = await prisma.notification.findMany({
-      where: whereClause,
-      include: {
-        student: true,
-        relatedClass: true,
-        relatedEvent: true,
-        relatedAnnouncement: true,
-        relatedFee: true
-      },
-      orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as string)
-    });
-
-    return res.json({
-      success: true,
-      data: {
-        notifications,
-        unreadCount: notifications.filter(n => !n.isRead).length
-      }
-    });
-  } catch (error) {
-    console.error('Get parent notifications error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to get notifications'
-    });
-  }
-});
 
 // Get children data (for frontend compatibility)
 router.get('/children', requireAuth, getUserProfile, async (req: AuthenticatedRequest, res) => {
