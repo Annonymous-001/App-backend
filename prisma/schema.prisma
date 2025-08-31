@@ -10,7 +10,6 @@ datasource db {
 model Admin {
   id       String @id @default(cuid())
   username String @unique
-  notifications Notification[]
 }
 
 model Student {
@@ -33,48 +32,45 @@ model Student {
   fatherName  String
   motherName  String
   attendances Attendance[]
+  enrollments Enrollment[]
   fees        Fee[]
   results     Result[]
   parent      Parent?        @relation(fields: [parentId], references: [id])
-  enrollments Enrollment[]
-  notifications Notification[]
 }
 
 model Enrollment {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   studentId String
   classId   Int
   gradeId   Int
-  year      Int       // Academic year (BS)
+  year      Int
   joinedAt  DateTime  @default(now())
   leftAt    DateTime?
-
-  student   Student   @relation(fields: [studentId], references: [StudentId])
   class     Class     @relation(fields: [classId], references: [id])
   grade     Grade     @relation(fields: [gradeId], references: [id])
+  student   Student   @relation(fields: [studentId], references: [StudentId])
 
   @@unique([studentId, year])
 }
 
 model Teacher {
-  id          String              @id @default(cuid())
-  username    String              @unique
-  name        String
-  surname     String
-  email       String?             @unique
-  phone       String?             @unique
-  address     String
-  img         String?
-  bloodType   String
-  sex         UserSex
-  createdAt   DateTime            @default(now())
-  birthday    DateTime
-  teacherId   String              @unique
-  classes     Class[]
-  lessons     Lesson[]
-  attendances TeacherAttendance[]
-  subjects    Subject[]           @relation("SubjectToTeacher")
-  notifications Notification[]
+  id               String              @id @default(cuid())
+  username         String              @unique
+  name             String
+  surname          String
+  email            String?             @unique
+  phone            String?             @unique
+  address          String
+  img              String?
+  bloodType        String
+  sex              UserSex
+  createdAt        DateTime            @default(now())
+  birthday         DateTime
+  teacherId        String              @unique
+  classes          Class[]
+  lessons          Lesson[]
+  attendances      TeacherAttendance[]
+  SubjectToTeacher SubjectToTeacher[]
 }
 
 model Parent {
@@ -88,12 +84,11 @@ model Parent {
   createdAt DateTime  @default(now())
   parentId  String    @unique
   students  Student[]
-  notifications Notification[]
 }
 
 model Grade {
-  id       Int       @id @default(autoincrement())
-  level    Int       @unique
+  id       Int          @id @default(autoincrement())
+  level    Int          @unique
   classes  Class[]
   students Enrollment[]
 }
@@ -108,19 +103,18 @@ model Class {
   attendances   Attendance[]
   grade         Grade          @relation(fields: [gradeId], references: [id])
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
-  events        Event[]
-  lessons       Lesson[]
   students      Enrollment[]
+  events        Event[]
   exams         Exam[]
-  notifications Notification[]
+  lessons       Lesson[]
 }
 
 model Subject {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  lessons  Lesson[]
-  teachers Teacher[] @relation("SubjectToTeacher")
-  exams    Exam[]
+  id               Int                @id @default(autoincrement())
+  name             String             @unique
+  exams            Exam[]
+  lessons          Lesson[]
+  SubjectToTeacher SubjectToTeacher[]
 }
 
 model Lesson {
@@ -144,10 +138,10 @@ model Exam {
   title     String
   startTime DateTime
   endTime   DateTime
-  subjectId Int
   classId   Int
-  subject   Subject  @relation(fields: [subjectId], references: [id])
+  subjectId Int
   class     Class    @relation(fields: [classId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
   results   Result[]
 }
 
@@ -204,7 +198,6 @@ model Event {
   endTime     DateTime
   classId     Int?
   class       Class?   @relation(fields: [classId], references: [id])
-  notifications Notification[]
 }
 
 model Announcement {
@@ -214,7 +207,6 @@ model Announcement {
   date        DateTime
   classId     Int?
   class       Class?   @relation(fields: [classId], references: [id])
-  notifications Notification[]
 }
 
 model Accountant {
@@ -226,7 +218,6 @@ model Accountant {
   phone     String?  @unique
   address   String
   createdAt DateTime @default(now())
-  notifications Notification[]
 }
 
 model Fee {
@@ -241,7 +232,6 @@ model Fee {
   updatedAt   DateTime  @updatedAt
   student     Student   @relation(fields: [studentId], references: [id])
   payments    Payment[]
-  notifications Notification[]
 }
 
 model Payment {
@@ -266,42 +256,15 @@ model Finance {
   updatedAt   DateTime
 }
 
-model Notification {
-  id          String           @id @default(cuid())
-  title       String
-  message     String
-  type        NotificationType
-  priority    NotificationPriority @default(NORMAL)
-  isRead      Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  readAt      DateTime?
-  
-  // Target specific users
-  studentId   String?
-  teacherId   String?
-  parentId    String?
-  accountantId String?
-  adminId     String?
-  
-  // Target by role (for broadcast notifications) - role comes from Clerk public metadata
-  targetRole  String?
-  
-  // Related entities
-  relatedClassId Int?
-  relatedEventId Int?
-  relatedAnnouncementId Int?
-  relatedFeeId Int?
-  
-  // Relations
-  student     Student?     @relation(fields: [studentId], references: [id])
-  teacher     Teacher?     @relation(fields: [teacherId], references: [id])
-  parent      Parent?      @relation(fields: [parentId], references: [id])
-  accountant  Accountant?  @relation(fields: [accountantId], references: [id])
-  admin       Admin?       @relation(fields: [adminId], references: [id])
-  relatedClass Class?      @relation(fields: [relatedClassId], references: [id])
-  relatedEvent Event?      @relation(fields: [relatedEventId], references: [id])
-  relatedAnnouncement Announcement? @relation(fields: [relatedAnnouncementId], references: [id])
-  relatedFee  Fee?         @relation(fields: [relatedFeeId], references: [id])
+model SubjectToTeacher {
+  A       Int
+  B       String
+  Subject Subject @relation(fields: [A], references: [id], onDelete: Cascade)
+  Teacher Teacher @relation(fields: [B], references: [id], onDelete: Cascade)
+
+  @@id([A, B], map: "_SubjectToTeacher_AB_pkey")
+  @@index([B], map: "_SubjectToTeacher_B_index")
+  @@map("_SubjectToTeacher")
 }
 
 enum UserSex {
@@ -359,24 +322,4 @@ enum ExpenseType {
   SUPPLIES
   UTILITIES
   OTHER
-}
-
-enum NotificationType {
-  ANNOUNCEMENT
-  EVENT
-  FEE_DUE
-  FEE_PAID
-  ATTENDANCE
-  EXAM
-  ASSIGNMENT
-  RESULT
-  GENERAL
-  SYSTEM
-}
-
-enum NotificationPriority {
-  LOW
-  NORMAL
-  HIGH
-  URGENT
 }
