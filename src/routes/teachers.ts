@@ -21,6 +21,7 @@ router.get('/profile', requireAuth, getUserProfile, requireRole(['teacher']), as
         classes: {
           include: {
             grade: true,
+            supervisor: true,
             students: {
               include: {
                 student: true
@@ -58,6 +59,7 @@ router.get('/classes', requireAuth, getUserProfile, requireRole(['teacher']), as
       },
       include: {
         grade: true,
+        supervisor: true,
         students: {
           include: {
             student: true
