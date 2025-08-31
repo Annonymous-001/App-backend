@@ -7,6 +7,7 @@ export interface AuthenticatedRequest extends Request {
   userRole?: string;
   userEmail?: string;
   signInId?: string;
+  userProfile?: any; // User profile data from database
 }
 
 // Middleware to require authentication
@@ -75,10 +76,87 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
   }
 };
 
-// Middleware to get user profile (deprecated - now handled in routes)
+// Middleware to get user profile from database
 export const getUserProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  // This middleware is no longer needed as we get user data directly in routes
-  next();
+  try {
+    if (!req.userId || !req.userRole) {
+      return res.status(401).json({
+        success: false,
+        error: 'User authentication required'
+      });
+    }
+
+    // Import Prisma client dynamically to avoid circular dependencies
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+
+    let userProfile = null;
+
+    // Get user profile based on role
+    switch (req.userRole) {
+      case 'student':
+        userProfile = await prisma.student.findFirst({
+          where: { 
+            OR: [
+              { id: req.userId },
+              { username: req.userEmail }
+            ]
+          }
+        });
+        break;
+      case 'teacher':
+        userProfile = await prisma.teacher.findFirst({
+          where: { 
+            OR: [
+              { id: req.userId },
+              { username: req.userEmail }
+            ]
+          }
+        });
+        break;
+      case 'parent':
+        userProfile = await prisma.parent.findFirst({
+          where: { 
+            OR: [
+              { id: req.userId },
+              { username: req.userEmail }
+            ]
+          }
+        });
+        break;
+      case 'admin':
+        userProfile = await prisma.admin.findFirst({
+          where: { 
+            OR: [
+              { id: req.userId },
+              { username: req.userEmail }
+            ]
+          }
+        });
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid user role'
+        });
+    }
+
+    if (!userProfile) {
+      return res.status(404).json({
+        success: false,
+        error: 'User profile not found'
+      });
+    }
+
+    req.userProfile = userProfile;
+    return next();
+  } catch (error) {
+    console.error('Get user profile error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get user profile'
+    });
+  }
 };
 
 // Middleware to require specific role
